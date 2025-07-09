@@ -1,0 +1,37 @@
+{
+  "appId": "com.xinfumei.com",
+  "appName": "xfmCrmApp",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": false,
+      "launchShowDuration": 2000,
+      "launchFadeOutDuration": 300,
+      "backgroundColor": "#ffffff",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER_CROP",
+      "showSpinner": false
+    },
+    "StatusBar": {
+      "style": "default",
+      "backgroundColor": "#3a7afe",
+      "overlaysWebView": false
+    },
+    "Keyboard": {
+      "resize": "ionic",
+      "style": "DARK",
+      "resizeOnFullScreen": true
+    },
+    "SafeArea": {
+      "enabled": true,
+      "customColorsForSystemBars": true,
+      "statusBarBackgroundColor": "#3a7afe",
+      "statusBarStyle": "LIGHT",
+      "navigationBarBackgroundColor": "#ffffff",
+      "navigationBarStyle": "LIGHT"
+    }
+  }
+}
