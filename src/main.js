@@ -30,3 +30,11 @@ setTimeout(() => {
     fadeOutDuration: 300,
   });
 }, 2000); // 2秒后隐藏
+
+// 开发环境下启用Eruda调试工具
+if (process.env.NODE_ENV === "development") {
+  import("eruda").then((eruda) => {
+    eruda.default.init();
+    console.log("Eruda调试工具已启动");
+  });
+}

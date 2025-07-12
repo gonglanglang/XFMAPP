@@ -17,17 +17,35 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from "vue";
+import { ref, computed, watch, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
-import { Snackbar } from "@varlet/ui";
+import { Snackbar, StyleProvider, Themes } from "@varlet/ui";
+import { useUserStore } from "@/stores";
+// import Themes from "@/assets/JavaScript/theme.js"; // 自定义主题
 // 自定义组件
 import XFMAPPHeader from "@/components/XFMAPPHeader/index.vue";
 
 const router = useRouter();
 const route = useRoute();
+const userStore = useUserStore();
 
 const username = ref("");
 const activeTab = ref("home");
+
+// 应用启动时恢复主题设置
+onMounted(() => {
+  const theme = userStore.preferences.theme;
+  if (theme) {
+    if (theme === "md3Light") {
+      StyleProvider(Themes.md3Light);
+    } else if (theme === "md3Dark") {
+      StyleProvider(Themes.md3Dark);
+    } else if (theme === "auto") {
+      const prefersDark = window.matchMedia("(prefers-color-scheme: md3Dark)").matches;
+      StyleProvider(prefersDark ? Themes.md3Dark : Themes.md3Light);
+    }
+  }
+});
 
 const showTabBar = computed(() => {
   return !!route?.meta.showTabBar;
@@ -65,7 +83,7 @@ const handleTabChange = (name) => {
     settings: "/settings",
   };
   if (routes[name]) {
-    router.push(routes[name]);
+    router.replace(routes[name]);
   }
 };
 

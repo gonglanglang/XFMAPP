@@ -11,12 +11,11 @@ body {
   -moz-osx-font-smoothing: grayscale;
   /* 防止选中文本时的高亮 */
   -webkit-tap-highlight-color: transparent;
-}
 
-/* 安全区适配 */
-html {
-  /* 支持安全区 */
-  /* padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left); */
+  transition: background-color 0.25s, color 0.25s;
+  color: var(--color-text);
+  background-color: var(--color-body);
+  color-scheme: var(--color-scheme);
 }
 
 body {

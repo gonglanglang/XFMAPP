@@ -1,13 +1,12 @@
 <template>
   <div class="login-container">
-    <div class="bg-white rounded-xl p-10 w-full max-w-sm shadow-2xl border border-black/5">
+    <var-paper :elevation="2" class="p-10 w-full max-w-sm">
       <!-- Logo 区域 -->
       <div class="text-center mb-8">
         <var-icon name="account-circle" size="64" color="#1976d2" />
-        <h1 class="text-2xl font-semibold text-slate-800 mt-4 mb-2">幸福美 CRM</h1>
+        <h1 class="text-2xl font-semibold mt-4 mb-2">幸福美 CRM</h1>
         <!-- <p class="text-slate-500 text-sm m-0">请输入您的账号信息</p> -->
       </div>
-
       <!-- 登录表单 -->
       <var-form ref="form" :disabled="loading">
         <var-space direction="column" size="large">
@@ -18,7 +17,7 @@
           </var-input>
 
           <var-input v-model="loginForm.password" type="password" placeholder="请输入密码" :rules="passwordRules" clearable>
-            <template #prepend-icon>
+            <template #append-icon>
               <var-icon name="lock" />
             </template>
           </var-input>
@@ -35,7 +34,7 @@
         <var-divider vertical />
         <var-button text type="primary" size="small"> 注册账号 </var-button>
       </div>
-    </div>
+    </var-paper>
   </div>
 </template>
 
@@ -82,6 +81,7 @@ const handleLogin = async () => {
     const params = {
       password: await rsa.encrypt(loginForm.password),
       phone: loginForm.username,
+      // loginType: "APP",
     };
     const { data } = await API?.APILogin?.APIAuthAuthLogin(params);
     console.log("请求到的数据", data);
@@ -127,7 +127,7 @@ onMounted(() => {
   justify-content: center;
 
   /* 背景 */
-  background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
+  /* background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%); */
 
   /* 防止滚动 */
   overflow: hidden;

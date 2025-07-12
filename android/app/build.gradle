@@ -35,9 +35,13 @@ android {
 }
 
 repositories {
-    flatDir{
-        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
-    }
+    google()
+    mavenCentral()
+    mavenLocal()
+    // 如果确实需要本地JAR文件，可以使用以下方式
+    // flatDir {
+    //     dirs 'libs'
+    // }
 }
 
 dependencies {

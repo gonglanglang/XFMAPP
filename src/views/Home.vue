@@ -1,5 +1,5 @@
 <template>
-  <div class="bg-gradient-to-br from-slate-50 to-slate-300 h-full flex flex-col">
+  <div class="h-full flex flex-col">
     <!-- 用于解决安全区问题的头部组件 -->
     <XFMSafeAreaHeader>
       <var-tabs class="flex-shrink-0 z-[1000]" v-model:active="active">
@@ -43,20 +43,73 @@
     <var-snackbar v-model:show="showMessage" :type="messageType" :duration="3000">
       {{ message }}
     </var-snackbar>
+
+    <!-- 更新弹框 -->
+    <var-dialog v-model:show="showUpdateDialog" title="发现新版本" :close-on-click-overlay="false" :close-on-key-escape="false">
+      <div class="p-4">
+        <div class="mb-4">
+          <h3 class="text-lg font-semibold mb-2">{{ updateInfo.title }}</h3>
+          <p class="text-gray-600 text-sm whitespace-pre-line">{{ updateInfo.description }}</p>
+          <p class="text-sm text-gray-500 mt-2">版本: {{ updateInfo.version }}</p>
+          <p class="text-sm text-gray-500">大小: {{ formatFileSize(updateInfo.fileSize) }}</p>
+        </div>
+
+        <!-- 下载进度 -->
+        <div v-if="isDownloading" class="mb-4">
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm text-gray-600">下载进度</span>
+            <span class="text-sm text-gray-600">{{ downloadProgress.toFixed(2) }}%</span>
+          </div>
+          <var-progress :value="downloadProgress" class="mb-2" />
+          <p class="text-xs text-gray-500 text-center">{{ downloadStatus }}</p>
+        </div>
+
+        <!-- 安装进度 -->
+        <div v-if="isInstalling" class="mb-4">
+          <div class="flex justify-center items-center">
+            <var-loading type="circle" size="small" class="mr-2" />
+            <span class="text-sm text-gray-600">正在安装...</span>
+          </div>
+        </div>
+      </div>
+
+      <template #actions>
+        <div class="flex pb-4 justify-around">
+          <var-button v-if="!isDownloading && !isInstalling" text @click="cancelUpdate" :disabled="updateInfo.forceUpdate">
+            {{ updateInfo.forceUpdate ? "强制更新" : "稍后更新" }}
+          </var-button>
+          <var-button v-if="!isDownloading && !isInstalling" type="primary" @click="startUpdate"> 立即更新 </var-button>
+        </div>
+      </template>
+    </var-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { Camera } from "@capacitor/camera";
+import { Device } from "@capacitor/device";
 // 导入XFMAPPHeader组件
 import XFMAPPHeader from "@/components/XFMAPPHeader/index.vue";
 import XFMSafeAreaHeader from "@/components/XFMSafeAreaHeader/index.vue";
+
+// 导入更新系统方法
+import { checkForUpdate } from "@/tools/updateChecker";
 
 const photoUrl = ref(null);
 const showMessage = ref(false);
 const message = ref("");
 const messageType = ref("success");
+const active = ref(0);
+const date = ref(new Date());
+
+// 更新相关状态
+const showUpdateDialog = ref(false);
+const updateInfo = ref({});
+const isDownloading = ref(false);
+const isInstalling = ref(false);
+const downloadProgress = ref(0);
+const downloadStatus = ref("");
 
 const takePhoto = async () => {
   try {
@@ -81,4 +134,129 @@ const clearPhoto = () => {
   messageType.value = "info";
   showMessage.value = true;
 };
+
+// 格式化文件大小
+const formatFileSize = (bytes) => {
+  if (!bytes) return "0 B";
+  const k = 1024;
+  const sizes = ["B", "KB", "MB", "GB"];
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
+};
+
+// 取消更新
+const cancelUpdate = () => {
+  if (!updateInfo.value.forceUpdate) {
+    showUpdateDialog.value = false;
+  }
+};
+
+// 开始更新
+const startUpdate = async () => {
+  try {
+    const deviceInfo = await Device.getInfo();
+
+    if (deviceInfo.platform === "android") {
+      await downloadAndInstallAndroid();
+    } else if (deviceInfo.platform === "ios") {
+      await redirectToAppStore();
+    } else {
+      // Web平台刷新页面
+      window.location.reload();
+    }
+  } catch (error) {
+    console.error("更新失败:", error);
+    message.value = "更新失败，请稍后重试";
+    messageType.value = "error";
+    showMessage.value = true;
+  }
+};
+
+// Android下载并安装
+const downloadAndInstallAndroid = async () => {
+  isDownloading.value = true;
+  downloadProgress.value = 0;
+  downloadStatus.value = "准备下载...";
+
+  try {
+    // 模拟下载进度
+    const downloadInterval = setInterval(() => {
+      if (downloadProgress.value < 100) {
+        downloadProgress.value += Math.random() * 10;
+        if (downloadProgress.value > 100) downloadProgress.value = 100;
+
+        if (downloadProgress.value < 30) {
+          downloadStatus.value = "正在连接服务器...";
+        } else if (downloadProgress.value < 80) {
+          downloadStatus.value = "正在下载更新包...";
+        } else if (downloadProgress.value < 100) {
+          downloadStatus.value = "即将完成...";
+        } else {
+          downloadStatus.value = "下载完成";
+          clearInterval(downloadInterval);
+
+          // 开始安装
+          setTimeout(() => {
+            isDownloading.value = false;
+            isInstalling.value = true;
+
+            // 模拟安装过程
+            setTimeout(() => {
+              // 这里应该调用Capacitor的安装API
+              // 实际项目中需要使用文件下载和安装插件
+              console.log("开始安装APK");
+
+              // 安装完成后的处理
+              setTimeout(() => {
+                isInstalling.value = false;
+                showUpdateDialog.value = false;
+                message.value = "更新安装完成，应用将重启";
+                messageType.value = "success";
+                showMessage.value = true;
+
+                // 重启应用
+                setTimeout(() => {
+                  window.location.reload();
+                }, 2000);
+              }, 3000);
+            }, 1000);
+          }, 500);
+        }
+      }
+    }, 200);
+  } catch (error) {
+    isDownloading.value = false;
+    isInstalling.value = false;
+    throw error;
+  }
+};
+
+// iOS跳转到App Store
+const redirectToAppStore = async () => {
+  const appStoreUrl = updateInfo.value.downloadInfo?.appStore?.url;
+  if (appStoreUrl) {
+    window.open(appStoreUrl, "_system");
+  }
+  showUpdateDialog.value = false;
+};
+
+// 显示更新弹框
+const showUpdatePrompt = (updateData) => {
+  updateInfo.value = updateData;
+  showUpdateDialog.value = true;
+  console.log("开始更新", updateData.url);
+};
+
+onMounted(async () => {
+  /* 检测应用是否需要更新 */
+  try {
+    const platformUpdateData = await checkForUpdate();
+    if (platformUpdateData.hasUpdate) {
+      // 自动弹出更新弹框
+      showUpdatePrompt(platformUpdateData);
+    }
+  } catch (error) {
+    console.error("检查更新失败:", error);
+  }
+});
 </script>

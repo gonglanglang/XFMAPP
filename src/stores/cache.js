@@ -8,6 +8,8 @@ export const useCacheStore = defineStore("cache", {
     tempData: {},
     // 表单数据缓存
     formData: {},
+    // 表单配置缓存 - 只保留配置和返回路径
+    formConfig: null,
     // 搜索历史
     searchHistory: [],
     // 最近访问
@@ -83,6 +85,16 @@ export const useCacheStore = defineStore("cache", {
       return this.formData[formName]?.data;
     },
 
+    // 设置表单配置
+    setFormConfig(config) {
+      this.formConfig = config;
+    },
+
+    // 获取表单配置
+    getFormConfig() {
+      return this.formConfig;
+    },
+
     // 添加搜索历史
     addSearchHistory(keyword) {
       if (keyword && keyword.trim()) {
@@ -122,6 +134,7 @@ export const useCacheStore = defineStore("cache", {
       this.apiCache.clear();
       this.tempData = {};
       this.formData = {};
+      this.formConfig = null;
     },
   },
 

@@ -17,18 +17,19 @@ export default defineConfig({
     minify: false,
     emptyOutDir: true,
   },
-      server: {
-      host: "0.0.0.0",
-      port: 32001,
-      open: true,
-      proxy: {
-        // 代理 /dev-api 的请求
-        "/agent": {
-          changeOrigin: true,
-          // 代理目标地址：https://api.youlai.tech
-          target: "https://crm.beautyedutech.com",
-          rewrite: (path) => path.replace(new RegExp("^" + "/agent"), ""),
-        },
+  server: {
+    host: "0.0.0.0",
+    port: 32001,
+    open: true,
+    proxy: {
+      // 代理 /dev-api 的请求
+      "/agent": {
+        changeOrigin: true,
+        // 代理目标地址：https://api.youlai.tech
+        target: "https://crm.beautyedutech.com",
+        // target: "http://172.16.0.179:8801",
+        rewrite: (path) => path.replace(new RegExp("^" + "/agent"), ""),
       },
     },
+  },
 });

@@ -1,5 +1,7 @@
 import { CapacitorHttp } from "@capacitor/core";
 import { Snackbar } from "@varlet/ui";
+import { useUserStore } from "@/stores/user";
+import router from "@/router";
 
 // 检查是否在原生环境
 const isNative = () => {
@@ -27,6 +29,12 @@ const makeRequest = async (method, url, data = null, config = {}) => {
     "Content-Type": "application/json;charset=UTF-8",
   };
 
+  // 获取用户store中的token
+  const userStore = useUserStore();
+  if (userStore.token) {
+    defaultHeaders.Authorization = `Bearer ${userStore.token}`;
+  }
+
   // 合并headers
   const headers = {
     ...defaultHeaders,
@@ -38,6 +46,7 @@ const makeRequest = async (method, url, data = null, config = {}) => {
   if (method.toLowerCase() === "get") {
     const separator = fullUrl.includes("?") ? "&" : "?";
     finalUrl = `${fullUrl}${separator}_t=${Date.now()}`;
+    console.log("请求参数", data);
     if (data) {
       // GET请求将data转换为查询参数
       const params = new URLSearchParams(data).toString();
@@ -142,6 +151,7 @@ const makeRequest = async (method, url, data = null, config = {}) => {
     console.error(`${method.toUpperCase()}请求错误:`, error);
 
     let message = "网络错误";
+    let shouldLogout = false;
 
     if (error.name === "TimeoutError") {
       message = "请求超时";
@@ -157,9 +167,8 @@ const makeRequest = async (method, url, data = null, config = {}) => {
             message = "请求参数错误";
             break;
           case 401:
-            message = "未授权，请重新登录";
-            // 清除token并跳转到登录页
-            localStorage.removeItem("token");
+            message = "登录已过期，请重新登录";
+            shouldLogout = true;
             break;
           case 403:
             message = "拒绝访问";
@@ -178,7 +187,31 @@ const makeRequest = async (method, url, data = null, config = {}) => {
       message = error.message;
     }
 
-    Snackbar.error(message);
+    // 处理401状态码 - 退出登录
+    if (shouldLogout) {
+      const userStore = useUserStore();
+
+      // 清除用户状态
+      userStore.logout();
+
+      // 清除本地存储的token
+      localStorage.removeItem("token");
+      localStorage.removeItem("refreshToken");
+
+      // 显示提示信息
+      Snackbar.error(message);
+
+      // 延迟跳转到登录页，避免在请求过程中立即跳转
+      setTimeout(() => {
+        // 检查当前路由是否已经是登录页，避免重复跳转
+        if (router.currentRoute.value.path !== "/login") {
+          router.replace("/login");
+        }
+      }, 1000);
+    } else {
+      Snackbar.error(message);
+    }
+
     throw error;
   }
 };

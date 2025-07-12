@@ -1,5 +1,5 @@
 <template>
-  <header v-if="showHeader" class="app-header">
+  <header class="app-header">
     <var-app-bar :title="route?.meta?.title" :safe-area-top="true" v-bind="$attrs">
       <!-- 左侧内容区域 -->
       <template #left>
@@ -40,28 +40,7 @@ const showBack = computed(() => {
   } else return route.meta.showBack;
 });
 
-// 根据路由控制显示状态
-const showHeader = computed(() => {
-  return route.name !== "Login";
-});
-
-const showUserInfo = computed(() => {
-  return route.name === "Home";
-});
-
-const currentTitle = computed(() => {
-  const titles = {
-    Home: "幸福美 CRM",
-    Camera: "拍照",
-    Profile: "个人中心",
-    Settings: "设置",
-  };
-  return titles[route.name] || "应用";
-});
-
-onMounted(() => {
-  console.log(route);
-});
+onMounted(() => {});
 
 // 返回按钮
 const goBack = () => {

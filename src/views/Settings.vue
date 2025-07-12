@@ -1,61 +1,64 @@
 <template>
-  <div class="settings-container">
-    <div class="content-area">
+  <div class="h-full flex flex-col">
+    <!-- 添加XFMAPPHeader组件 -->
+    <XFMAPPHeader class="flex-shrink-0 z-[1000]" title-position="center"> </XFMAPPHeader>
+
+    <div class="flex-1 p-2 max-w-lg mx-auto overflow-y-auto w-full box-border sm:p-4">
       <!-- 设置选项 -->
-      <var-card class="settings-card" elevation="2">
-        <div class="settings-section">
-          <h4 class="section-title">应用设置</h4>
+      <var-card class="mb-4" elevation="2">
+        <div class="p-6">
+          <h4 class="text-base font-semibold mb-4">应用设置</h4>
 
           <!-- 主题设置 -->
-          <div class="setting-item">
-            <div class="setting-info">
-              <var-icon name="palette" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer">
+            <div class="flex items-center flex-1">
+              <var-icon name="palette" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">主题模式</div>
-                <div class="setting-desc">选择应用主题</div>
+                <div class="font-medium mb-0.5">主题模式</div>
+                <div class="text-sm text-gray-500">选择应用主题</div>
               </div>
             </div>
-            <var-select v-model="themeMode" @change="handleThemeChange" class="theme-select">
-              <var-option label="浅色" value="light" />
-              <var-option label="深色" value="dark" />
-              <var-option label="跟随系统" value="auto" />
+            <var-select v-model="themeMode" @change="handleThemeChange" class="min-w-[120px]">
+              <var-option label="浅色" value="md3Light" />
+              <var-option label="深色" value="md3Dark" />
+              <!-- <var-option label="跟随系统" value="auto" /> -->
             </var-select>
           </div>
 
           <!-- 语言设置 -->
-          <div class="setting-item">
-            <div class="setting-info">
-              <var-icon name="translate" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer">
+            <div class="flex items-center flex-1">
+              <var-icon name="translate" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">语言</div>
-                <div class="setting-desc">选择应用语言</div>
+                <div class="font-medium mb-0.5">语言</div>
+                <div class="text-sm text-gray-500">选择应用语言</div>
               </div>
             </div>
-            <var-select v-model="language" @change="handleLanguageChange" class="language-select">
+            <var-select v-model="language" @change="handleLanguageChange" class="min-w-[120px]">
               <var-option label="简体中文" value="zh-CN" />
               <var-option label="English" value="en-US" />
             </var-select>
           </div>
 
           <!-- 通知设置 -->
-          <div class="setting-item">
-            <div class="setting-info">
-              <var-icon name="bell" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer">
+            <div class="flex items-center flex-1">
+              <var-icon name="bell" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">推送通知</div>
-                <div class="setting-desc">接收应用通知</div>
+                <div class="font-medium mb-0.5">推送通知</div>
+                <div class="text-sm text-gray-500">接收应用通知</div>
               </div>
             </div>
             <var-switch v-model="notifications" @change="handleNotificationChange" />
           </div>
 
           <!-- 自动登录 -->
-          <div class="setting-item">
-            <div class="setting-info">
-              <var-icon name="login" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer">
+            <div class="flex items-center flex-1">
+              <var-icon name="login" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">自动登录</div>
-                <div class="setting-desc">启动时自动登录</div>
+                <div class="font-medium mb-0.5">自动登录</div>
+                <div class="text-sm text-gray-500">启动时自动登录</div>
               </div>
             </div>
             <var-switch v-model="autoLogin" @change="handleAutoLoginChange" />
@@ -63,62 +66,62 @@
         </div>
 
         <!-- 数据管理 -->
-        <div class="settings-section">
-          <h4 class="section-title">数据管理</h4>
+        <div class="p-6 border-t border-gray-100">
+          <h4 class="text-base font-semibold mb-4">数据管理</h4>
 
-          <div class="setting-item" @click="clearCache">
-            <div class="setting-info">
-              <var-icon name="delete-sweep" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer" @click="clearCache">
+            <div class="flex items-center flex-1">
+              <var-icon name="delete-sweep" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">清除缓存</div>
-                <div class="setting-desc">清除应用缓存数据</div>
+                <div class="font-medium mb-0.5">清除缓存</div>
+                <div class="text-sm text-gray-500">清除应用缓存数据</div>
               </div>
             </div>
-            <var-icon name="chevron-right" class="arrow-icon" />
+            <var-icon name="chevron-right" class="text-gray-400" />
           </div>
 
-          <div class="setting-item" @click="exportData">
-            <div class="setting-info">
-              <var-icon name="download" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer" @click="exportData">
+            <div class="flex items-center flex-1">
+              <var-icon name="download" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">导出数据</div>
-                <div class="setting-desc">导出用户数据</div>
+                <div class="font-medium mb-0.5">导出数据</div>
+                <div class="text-sm text-gray-500">导出用户数据</div>
               </div>
             </div>
-            <var-icon name="chevron-right" class="arrow-icon" />
+            <var-icon name="chevron-right" class="text-gray-400" />
           </div>
         </div>
 
         <!-- 关于 -->
-        <div class="settings-section">
-          <h4 class="section-title">关于</h4>
+        <div class="p-6 border-t border-gray-100">
+          <h4 class="text-base font-semibold mb-4">关于</h4>
 
-          <div class="setting-item" @click="showAbout">
-            <div class="setting-info">
-              <var-icon name="information" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer" @click="showAbout">
+            <div class="flex items-center flex-1">
+              <var-icon name="information" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">关于应用</div>
-                <div class="setting-desc">版本 {{ appStore.config.version }}</div>
+                <div class="font-medium mb-0.5">关于应用</div>
+                <div class="text-sm text-gray-500">版本 {{ appStore.config.version }}</div>
               </div>
             </div>
-            <var-icon name="chevron-right" class="arrow-icon" />
+            <var-icon name="chevron-right" class="text-gray-400" />
           </div>
 
-          <div class="setting-item" @click="checkUpdate">
-            <div class="setting-info">
-              <var-icon name="update" class="setting-icon" />
+          <div class="flex items-center justify-between py-3 cursor-pointer" @click="checkUpdate">
+            <div class="flex items-center flex-1">
+              <var-icon name="update" class="mr-3 text-gray-500" />
               <div>
-                <div class="setting-label">检查更新</div>
-                <div class="setting-desc">检查应用更新</div>
+                <div class="font-medium mb-0.5">检查更新</div>
+                <div class="text-sm text-gray-500">检查应用更新</div>
               </div>
             </div>
-            <var-icon name="chevron-right" class="arrow-icon" />
+            <var-icon name="chevron-right" class="text-gray-400" />
           </div>
         </div>
       </var-card>
 
       <!-- 退出登录按钮 -->
-      <div class="logout-section">
+      <div class="mt-6">
         <var-button type="danger" block size="large" @click="handleLogout" :loading="isLoggingOut">
           <var-icon name="logout" class="mr-2" />
           退出登录
@@ -131,12 +134,12 @@
 
     <!-- 关于应用对话框 -->
     <var-dialog v-model:show="showAboutDialog" title="关于应用" confirm-button-text="确定">
-      <div class="about-content">
+      <div class="text-center p-4">
         <div class="app-info">
           <var-icon name="application" size="48" color="#3a7afe" class="mb-4" />
-          <h3>{{ appStore.config.appName }}</h3>
-          <p>版本：{{ appStore.config.version }}</p>
-          <p>构建时间：{{ buildTime }}</p>
+          <h3 class="my-2">{{ appStore.config.appName }}</h3>
+          <p class="my-1 text-gray-500 text-sm">版本：{{ appStore.config.version }}</p>
+          <p class="my-1 text-gray-500 text-sm">构建时间：{{ buildTime }}</p>
         </div>
       </div>
     </var-dialog>
@@ -147,7 +150,11 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useUserStore, useAppStore, useCacheStore } from "@/stores";
-import { Snackbar, Dialog } from "@varlet/ui";
+import { Snackbar, Dialog, StyleProvider, Themes } from "@varlet/ui";
+import API from "@/API";
+
+// 导入XFMAPPHeader组件
+import XFMAPPHeader from "@/components/XFMAPPHeader/index.vue";
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -160,6 +167,7 @@ const showLogoutDialog = ref(false);
 const showAboutDialog = ref(false);
 
 // 设置选项
+console.log("设置筛选项", userStore.preferences);
 const themeMode = ref(userStore.preferences.theme || "light");
 const language = ref(userStore.preferences.language || "zh-CN");
 const notifications = ref(userStore.preferences.notifications ?? true);
@@ -174,6 +182,7 @@ const buildTime = computed(() => {
 const handleThemeChange = (value) => {
   userStore.updatePreferences({ theme: value });
   // 这里可以添加实际的主题切换逻辑
+  StyleProvider(Themes[value]);
   Snackbar.success(`主题已切换为${value === "light" ? "浅色" : value === "dark" ? "深色" : "跟随系统"}模式`);
 };
 
@@ -260,7 +269,9 @@ const confirmLogout = async () => {
     isLoggingOut.value = true;
 
     // 模拟退出登录 API 调用
-    await new Promise((resolve) => setTimeout(resolve, 1000));
+    await API?.APILogin.APIAuthAuthLogout({
+      loginType: "APP",
+    });
 
     // 清除用户数据
     userStore.logout();
@@ -285,153 +296,3 @@ onMounted(() => {
   // 可以在这里加载一些设置相关的数据
 });
 </script>
-
-<style scoped>
-.settings-container {
-  min-height: 100vh;
-  background: linear-gradient(135deg, #f8fafc 0%, #cbd5e1 100%);
-  padding-bottom: 2rem;
-}
-
-.content-area {
-  padding: 1.25rem;
-  max-width: 32rem;
-  margin: 0 auto;
-}
-
-.user-info-card {
-  background: white;
-  margin-bottom: 1rem;
-  border-radius: 12px;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  padding: 1.5rem;
-}
-
-.user-avatar {
-  margin-right: 1rem;
-}
-
-.user-details {
-  flex: 1;
-}
-
-.username {
-  font-size: 1.125rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 0.25rem 0;
-}
-
-.user-role {
-  color: #6b7280;
-  margin: 0;
-  font-size: 0.875rem;
-}
-
-.settings-card {
-  background: white;
-  border-radius: 12px;
-  margin-bottom: 1rem;
-}
-
-.settings-section {
-  padding: 1.5rem;
-}
-
-.settings-section:not(:last-child) {
-  border-bottom: 1px solid #f3f4f6;
-}
-
-.section-title {
-  font-size: 1rem;
-  font-weight: 600;
-  color: #374151;
-  margin: 0 0 1rem 0;
-}
-
-.setting-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 0;
-  cursor: pointer;
-  transition: background-color 0.2s;
-}
-
-.setting-item:hover {
-  background-color: #f9fafb;
-  border-radius: 8px;
-  margin: 0 -0.5rem;
-  padding: 0.75rem 0.5rem;
-}
-
-.setting-info {
-  display: flex;
-  align-items: center;
-  flex: 1;
-}
-
-.setting-icon {
-  margin-right: 0.75rem;
-  color: #6b7280;
-}
-
-.setting-label {
-  font-weight: 500;
-  color: #374151;
-  margin-bottom: 0.125rem;
-}
-
-.setting-desc {
-  font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.arrow-icon {
-  color: #9ca3af;
-}
-
-.theme-select,
-.language-select {
-  min-width: 120px;
-}
-
-.logout-section {
-  margin-top: 1.5rem;
-}
-
-.about-content {
-  text-align: center;
-  padding: 1rem;
-}
-
-.app-info h3 {
-  margin: 0.5rem 0;
-  color: #374151;
-}
-
-.app-info p {
-  margin: 0.25rem 0;
-  color: #6b7280;
-  font-size: 0.875rem;
-}
-
-/* 响应式设计 */
-@media (max-width: 640px) {
-  .content-area {
-    padding: 1rem;
-  }
-
-  .user-info {
-    padding: 1rem;
-  }
-
-  .settings-section {
-    padding: 1rem;
-  }
-}
-</style>

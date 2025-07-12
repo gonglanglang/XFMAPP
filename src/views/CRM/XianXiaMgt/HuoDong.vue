@@ -1,14 +1,14 @@
 <template>
-  <div class="simple-activity-page">
+  <div class="h-full flex flex-col">
     <!-- 顶部导航栏 -->
     <XFMAPPHeader title-position="center" title="活动管理"> </XFMAPPHeader>
 
     <!-- 主容器 -->
-    <div class="simple-container">
+    <div class="px-2.5 py-4 box-border flex-1">
       <!-- 搜索和筛选栏 -->
-      <div class="search-section">
-        <div class="search-row">
-          <var-input v-model="searchKeyword" placeholder="搜索活动名称..." clearable @input="debounceSearch" @clear="handleClearSearch" class="search-input">
+      <div class="mb-5">
+        <div class="flex gap-3 items-center flex-wrap">
+          <var-input v-model="searchKeyword" placeholder="搜索活动名称..." clearable @input="debounceSearch" @clear="handleClearSearch" class="flex-1 min-w-[250px] max-w-[400px]">
             <template #prepend-icon>
               <var-icon name="magnify" />
             </template>
@@ -17,83 +17,70 @@
       </div>
 
       <!-- 活动列表 -->
-      <div class="activity-list">
-        <!-- 加载状态 -->
-        <div v-if="loading" class="loading-container">
-          <var-loading type="wave" size="large" />
-          <p>加载中...</p>
-        </div>
+      <div class="w-full flex-1">
+        <var-list v-model:loading="loading" v-model:finished="finished" :immediate-check="false" @load="loadMore" @refresh="refreshData" class="h-full">
+          <!-- 空状态 -->
+          <div v-if="activities.length === 0 && !loading" class="flex flex-col items-center justify-center py-15 px-5">
+            <var-icon name="calendar-blank" size="60" color="#ccc" />
+            <p class="mt-4 text-base">
+              {{ searchKeyword || statusFilter ? "未找到符合条件的活动" : "暂无活动" }}
+            </p>
+          </div>
 
-        <!-- 空状态 -->
-        <div v-else-if="activities.length === 0" class="empty-container">
-          <var-icon name="calendar-blank" size="60" color="#ccc" />
-          <p class="empty-text">
-            {{ searchKeyword || statusFilter ? "未找到符合条件的活动" : "暂无活动" }}
-          </p>
-        </div>
+          <!-- 活动卡片列表 -->
+          <div v-else-if="activities.length > 0">
+            <div class="grid grid-cols-[repeat(auto-fill,minmax(320px,1fr))] gap-4 mb-5">
+              <var-paper v-for="activity in activities" :key="activity.id" class="p-5" :elevation="2" ripple @click="viewActivity(activity)">
+                <!-- 卡片头部 -->
+                <div class="flex justify-between items-start mb-4">
+                  <var-ellipsis class="font-bold flex-1 mr-3"> {{ activity.activityName }} </var-ellipsis>
+                  <var-chip :type="getActivityTypeColor(activity.activityType)" size="small" class="whitespace-nowrap" plain>
+                    {{ activity.activityType }}
+                  </var-chip>
+                </div>
 
-        <!-- 活动卡片列表 -->
-        <div v-else>
-          <div class="activity-cards">
-            <div v-for="activity in activities" :key="activity.id" class="activity-card" @click="viewActivity(activity)">
-              <!-- 卡片头部 -->
-              <div class="card-header">
-                <var-ellipsis class="font-bold"> {{ activity.activityName }} </var-ellipsis>
-                <var-chip :type="getActivityTypeColor(activity.activityType)" size="small" plain>
-                  {{ activity.activityType }}
-                </var-chip>
-              </div>
-
-              <!-- 卡片内容 -->
-              <div class="card-body">
-                <div class="activity-info">
-                  <div class="info-item">
-                    <var-icon name="clock" size="16" color="#666" />
-                    <span>{{ formatTime(activity.startTime, activity.endTime) }}</span>
-                  </div>
-                  <div class="info-item">
-                    <var-icon name="map-marker" size="16" color="#666" />
-                    <span>{{ activity.activityLocation }}</span>
-                  </div>
-                  <div class="info-item flex justify-between">
-                    <div class="flex">
-                      <var-icon name="account" size="16" color="#666" />
-                      <span>{{ activity.creator }}</span>
+                <!-- 卡片内容 -->
+                <div class="mb-4">
+                  <div class="flex flex-col gap-2">
+                    <div class="flex items-center gap-2 text-sm">
+                      <var-icon name="clock" size="16" color="#666" />
+                      <span class="leading-relaxed">{{ formatTime(activity.startTime, activity.endTime) }}</span>
                     </div>
+                    <div class="flex items-center gap-2 text-sm">
+                      <var-icon name="map-marker" size="16" color="#666" />
+                      <span class="leading-relaxed">{{ activity.activityLocation }}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                      <div class="flex items-center gap-2">
+                        <var-icon name="account" size="16" color="#666" />
+                        <span class="leading-relaxed">{{ activity.creator }}</span>
+                      </div>
 
-                    <var-chip :type="getStatusColor(activity)" size="small">
-                      {{ getActivityStatus(activity) }}
-                    </var-chip>
+                      <var-chip :type="getStatusColor(activity)" size="small">
+                        {{ getActivityStatus(activity) }}
+                      </var-chip>
+                    </div>
                   </div>
                 </div>
-              </div>
-
-              <!-- 卡片底部 -->
-              <!-- <div class="card-footer">
-                <var-chip :type="getStatusColor(activity)" size="small">
-                  {{ getActivityStatus(activity) }}
-                </var-chip>
-              </div> -->
+              </var-paper>
             </div>
           </div>
 
-          <!-- 下拉加载更多 -->
-          <div v-if="hasMore" class="load-more-container" ref="loadMoreRef">
-            <div v-if="loadingMore" class="loading-more">
+          <!-- 自定义加载插槽 -->
+          <template #loading>
+            <div class="flex items-center justify-center gap-2 text-gray-600 text-sm py-4">
               <var-loading type="wave" size="small" />
-              <span>加载更多...</span>
+              <span>加载中...</span>
             </div>
-            <div v-else class="load-more-trigger" @click="loadMore">
-              <var-icon name="chevron-down" size="20" />
-              <span>点击加载更多</span>
-            </div>
-          </div>
+          </template>
 
-          <!-- 没有更多数据提示 -->
-          <div v-else-if="activities.length > 0" class="no-more-data">
-            <span>已加载全部数据</span>
-          </div>
-        </div>
+          <!-- 自定义完成插槽 -->
+          <template #finished>
+            <div class="text-center p-5 text-gray-400 text-sm">
+              <span>已加载全部数据</span>
+            </div>
+          </template>
+        </var-list>
       </div>
     </div>
 
@@ -105,20 +92,22 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, nextTick } from "vue";
+import { ref, onMounted, onUnmounted } from "vue";
 import XFMAPPHeader from "@/components/XFMAPPHeader/index.vue";
 import API from "@/API";
+import { useRouter } from "vue-router";
+
+const router = useRouter();
 
 // 响应式数据
 const activities = ref([]);
 const searchKeyword = ref("");
 const statusFilter = ref("");
-const loading = ref(false);
-const loadingMore = ref(false);
+const loading = ref(true);
+const finished = ref(false); // var-list 需要的完成状态
 const showMessage = ref(false);
 const message = ref("");
 const messageType = ref("success");
-const loadMoreRef = ref(null);
 
 // 分页信息
 const pagination = ref({
@@ -128,9 +117,6 @@ const pagination = ref({
   pages: 1,
 });
 
-// 计算是否还有更多数据
-const hasMore = ref(true);
-
 // 防抖搜索
 let searchTimer = null;
 const debounceSearch = () => {
@@ -139,33 +125,25 @@ const debounceSearch = () => {
   }
   searchTimer = setTimeout(() => {
     handleSearch();
-  }, 500); // 500ms 防抖
+  }, 500);
 };
 
 // 获取活动列表
 const fetchActivities = async (isLoadMore = false, keyword = "", status = "") => {
-  if (isLoadMore) {
-    loadingMore.value = true;
-  } else {
-    loading.value = true;
-    activities.value = [];
-    pagination.value.current = 1;
-  }
-
   try {
     const params = {
-      current: pagination.value.current,
+      current: isLoadMore ? pagination.value.current + 1 : 1,
       size: pagination.value.size,
     };
 
     // 如果有搜索关键词，添加到参数中
     if (keyword) {
-      params.activityName = keyword; // 根据实际API参数名调整
+      params.activityName = keyword;
     }
 
     // 如果有状态筛选，添加到参数中
     if (status) {
-      params.status = status; // 根据实际API参数名调整
+      params.status = status;
     }
 
     const response = await API?.APIXianXia?.APIAperationalSportActivityFind(params);
@@ -188,63 +166,72 @@ const fetchActivities = async (isLoadMore = false, keyword = "", status = "") =>
         pages: response.data.pages,
       };
 
-      // 判断是否还有更多数据
-      hasMore.value = pagination.value.current < pagination.value.pages;
+      // 检查是否已加载完所有数据
+      if (pagination.value.current >= pagination.value.pages) {
+        finished.value = true;
+      } else {
+        finished.value = false;
+      }
     } else {
       showMessageToast("获取活动列表失败", "error");
     }
+    loading.value = false;
   } catch (error) {
     console.error("获取活动列表错误:", error);
     showMessageToast("网络错误，请重试", "error");
-  } finally {
-    loading.value = false;
-    loadingMore.value = false;
   }
+};
+
+// 加载更多数据 - var-list 的 @load 事件
+const loadMore = async () => {
+  if (finished.value) return;
+  await fetchActivities(true, searchKeyword.value, statusFilter.value);
+};
+
+// 刷新数据 - var-list 的 @refresh 事件
+const refreshData = async () => {
+  finished.value = false;
+  pagination.value.current = 1;
+  await fetchActivities(false, searchKeyword.value, statusFilter.value);
 };
 
 // 搜索处理
 const handleSearch = () => {
   console.log("搜索关键词:", searchKeyword.value);
+  finished.value = false;
+  pagination.value.current = 1;
   fetchActivities(false, searchKeyword.value, statusFilter.value);
 };
 
 // 状态筛选处理
 const handleStatusFilter = () => {
   console.log("状态筛选:", statusFilter.value);
+  finished.value = false;
+  pagination.value.current = 1;
   fetchActivities(false, searchKeyword.value, statusFilter.value);
 };
 
 // 清除搜索
 const handleClearSearch = () => {
   searchKeyword.value = "";
+  finished.value = false;
+  pagination.value.current = 1;
   fetchActivities(false, "", statusFilter.value);
-};
-
-// 加载更多
-const loadMore = async () => {
-  if (loadingMore.value || !hasMore.value) return;
-
-  pagination.value.current += 1;
-  await fetchActivities(true, searchKeyword.value, statusFilter.value);
-};
-
-// 滚动监听加载更多
-const handleScroll = () => {
-  if (!loadMoreRef.value || loadingMore.value || !hasMore.value) return;
-
-  const rect = loadMoreRef.value.getBoundingClientRect();
-  const windowHeight = window.innerHeight;
-
-  // 当加载更多区域进入视口时自动加载
-  if (rect.top <= windowHeight + 100) {
-    loadMore();
-  }
 };
 
 // 查看活动详情
 const viewActivity = (activity) => {
-  console.log("查看活动:", activity);
-  showMessageToast(`查看活动：${activity.activityName}`, "info");
+  // console.log("查看活动:", activity);
+  // showMessageToast(`查看活动：${activity.activityName}`, "info");
+  router.push({
+    name: "XianXia_HuoDong_Info",
+    query: {
+      activityId: activity.id,
+      activityName: activity.activityName,
+      createdTime: activity.createdTime,
+      activityDescription: activity.activityDescription,
+    },
+  });
 };
 
 // 获取活动状态
@@ -316,7 +303,7 @@ const showMessageToast = (msg, type = "success") => {
 onMounted(() => {
   fetchActivities();
   // 添加滚动监听
-  window.addEventListener("scroll", handleScroll);
+  // window.addEventListener("scroll", handleScroll);
 });
 
 // 组件卸载时清理
@@ -324,216 +311,6 @@ onUnmounted(() => {
   if (searchTimer) {
     clearTimeout(searchTimer);
   }
-  window.removeEventListener("scroll", handleScroll);
+  // window.removeEventListener("scroll", handleScroll);
 });
 </script>
-
-<style scoped>
-.simple-activity-page {
-  min-height: 100vh;
-  background-color: #f8f9fa;
-}
-
-.simple-container {
-  padding: 16px 10px;
-  max-width: 1200px;
-  margin: 0 auto;
-  box-sizing: border-box;
-}
-
-/* 搜索和筛选栏样式 */
-.search-section {
-  margin-bottom: 20px;
-}
-
-.search-row {
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.search-input {
-  flex: 1;
-  min-width: 250px;
-  max-width: 400px;
-}
-
-.status-filter {
-  min-width: 120px;
-  width: 150px;
-}
-
-/* 加载和空状态 */
-.loading-container,
-.empty-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: 60px 20px;
-  color: #666;
-}
-
-.empty-text {
-  margin-top: 16px;
-  font-size: 16px;
-}
-
-/* 活动卡片列表 */
-.activity-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 16px;
-  margin-bottom: 20px;
-}
-
-.activity-card {
-  background: white;
-  border-radius: 12px;
-  padding: 20px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-  transition: all 0.3s ease;
-  cursor: pointer;
-  border: 1px solid #e9ecef;
-}
-
-.activity-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
-}
-
-/* 卡片头部 */
-.card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 16px;
-}
-
-.activity-title {
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
-  margin: 0;
-  line-height: 1.4;
-  flex: 1;
-  margin-right: 12px;
-}
-
-/* 卡片内容 */
-.card-body {
-  margin-bottom: 16px;
-}
-
-.activity-info {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.info-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-}
-
-.info-item span {
-  line-height: 1.4;
-}
-
-/* 卡片底部 */
-.card-footer {
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
-  padding-top: 16px;
-  border-top: 1px solid #f0f0f0;
-}
-
-/* 加载更多样式 */
-.load-more-container {
-  padding: 20px;
-  text-align: center;
-}
-
-.loading-more {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #666;
-  font-size: 14px;
-}
-
-.load-more-trigger {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  color: #1976d2;
-  cursor: pointer;
-  padding: 12px;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
-  font-size: 14px;
-}
-
-.load-more-trigger:hover {
-  background-color: #f5f5f5;
-}
-
-.no-more-data {
-  text-align: center;
-  padding: 20px;
-  color: #999;
-  font-size: 14px;
-}
-
-/* 响应式设计 */
-@media (max-width: 768px) {
-  .simple-container {
-    padding: 12px;
-  }
-
-  .search-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .search-input {
-    min-width: auto;
-    max-width: none;
-  }
-
-  .status-filter {
-    min-width: auto;
-    width: 100%;
-  }
-
-  .activity-cards {
-    grid-template-columns: 1fr;
-    gap: 12px;
-  }
-
-  .activity-card {
-    padding: 16px;
-  }
-
-  .activity-title {
-    font-size: 16px;
-  }
-
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .activity-title {
-    margin-right: 0;
-  }
-}
-</style>
