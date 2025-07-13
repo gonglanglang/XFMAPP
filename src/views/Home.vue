@@ -89,6 +89,9 @@
 import { ref, onMounted } from "vue";
 import { Camera } from "@capacitor/camera";
 import { Device } from "@capacitor/device";
+// import { Filesystem, Directory } from "@capacitor/filesystem";
+// import { FileOpener } from "@capacitor-community/file-opener";
+import { Capacitor } from "@capacitor/core";
 // 导入XFMAPPHeader组件
 import XFMAPPHeader from "@/components/XFMAPPHeader/index.vue";
 import XFMSafeAreaHeader from "@/components/XFMSafeAreaHeader/index.vue";
@@ -157,9 +160,9 @@ const startUpdate = async () => {
     const deviceInfo = await Device.getInfo();
 
     if (deviceInfo.platform === "android") {
-      await downloadAndInstallAndroid();
+      // await downloadAndInstallAndroid();
     } else if (deviceInfo.platform === "ios") {
-      await redirectToAppStore();
+      // await redirectToAppStore();
     } else {
       // Web平台刷新页面
       window.location.reload();
@@ -173,72 +176,113 @@ const startUpdate = async () => {
 };
 
 // Android下载并安装
-const downloadAndInstallAndroid = async () => {
-  isDownloading.value = true;
-  downloadProgress.value = 0;
-  downloadStatus.value = "准备下载...";
+// const downloadAndInstallAndroid = async () => {
+//   isDownloading.value = true;
+//   downloadProgress.value = 0;
+//   downloadStatus.value = "准备下载...";
 
+//   try {
+//     const downloadUrl = "http://166.108.234.16/app-release1.0.1.apk";
+//     if (!downloadUrl) {
+//       throw new Error("下载链接不存在");
+//     }
+
+//     downloadStatus.value = "正在下载APK文件...";
+
+//     // 使用fetch下载文件
+//     const response = await fetch(downloadUrl);
+//     if (!response.ok) {
+//       throw new Error(`下载失败: ${response.status}`);
+//     }
+
+//     const contentLength = response.headers.get("content-length");
+//     const total = parseInt(contentLength, 10);
+//     let loaded = 0;
+
+//     const reader = response.body.getReader();
+//     const chunks = [];
+
+//     while (true) {
+//       const { done, value } = await reader.read();
+//       if (done) break;
+
+//       chunks.push(value);
+//       loaded += value.length;
+
+//       if (total) {
+//         downloadProgress.value = Math.round((loaded / total) * 100);
+//         downloadStatus.value = `正在下载... ${Math.round(loaded / 1024 / 1024)}MB / ${Math.round(total / 1024 / 1024)}MB`;
+//       }
+//     }
+
+//     // 合并所有chunks
+//     const blob = new Blob(chunks);
+//     const arrayBuffer = await blob.arrayBuffer();
+//     const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+//     downloadStatus.value = "保存文件中...";
+
+//     // 保存APK文件到设备
+//     const fileName = `update_${Date.now()}.apk`;
+//     const result = await Filesystem.writeFile({
+//       path: fileName,
+//       data: base64Data,
+//       directory: Directory.Cache,
+//     });
+
+//     downloadStatus.value = "下载完成，准备安装...";
+//     isDownloading.value = false;
+//     isInstalling.value = true;
+
+//     // 安装APK
+//     await installApk(result.uri);
+//   } catch (error) {
+//     console.error("下载或安装失败:", error);
+//     isDownloading.value = false;
+//     isInstalling.value = false;
+//     message.value = `更新失败: ${error.message}`;
+//     messageType.value = "error";
+//     showMessage.value = true;
+//   }
+// };
+
+// 安装APK文件
+const installApk = async (fileUri) => {
   try {
-    // 模拟下载进度
-    const downloadInterval = setInterval(() => {
-      if (downloadProgress.value < 100) {
-        downloadProgress.value += Math.random() * 10;
-        if (downloadProgress.value > 100) downloadProgress.value = 100;
+    if (Capacitor.getPlatform() === "android") {
+      // 使用FileOpener打开APK文件进行安装
+      await FileOpener.open({
+        filePath: fileUri,
+        contentType: "application/vnd.android.package-archive",
+        openWithDefault: true,
+      });
 
-        if (downloadProgress.value < 30) {
-          downloadStatus.value = "正在连接服务器...";
-        } else if (downloadProgress.value < 80) {
-          downloadStatus.value = "正在下载更新包...";
-        } else if (downloadProgress.value < 100) {
-          downloadStatus.value = "即将完成...";
-        } else {
-          downloadStatus.value = "下载完成";
-          clearInterval(downloadInterval);
-
-          // 开始安装
-          setTimeout(() => {
-            isDownloading.value = false;
-            isInstalling.value = true;
-
-            // 模拟安装过程
-            setTimeout(() => {
-              // 这里应该调用Capacitor的安装API
-              // 实际项目中需要使用文件下载和安装插件
-              console.log("开始安装APK");
-
-              // 安装完成后的处理
-              setTimeout(() => {
-                isInstalling.value = false;
-                showUpdateDialog.value = false;
-                message.value = "更新安装完成，应用将重启";
-                messageType.value = "success";
-                showMessage.value = true;
-
-                // 重启应用
-                setTimeout(() => {
-                  window.location.reload();
-                }, 2000);
-              }, 3000);
-            }, 1000);
-          }, 500);
-        }
-      }
-    }, 200);
+      // 安装完成后的处理
+      setTimeout(() => {
+        isInstalling.value = false;
+        showUpdateDialog.value = false;
+        message.value = "APK已打开，请按照系统提示完成安装";
+        messageType.value = "success";
+        showMessage.value = true;
+      }, 1000);
+    }
   } catch (error) {
-    isDownloading.value = false;
+    console.error("安装APK失败:", error);
     isInstalling.value = false;
-    throw error;
+    message.value = `安装失败: ${error.message}`;
+    messageType.value = "error";
+    showMessage.value = true;
   }
 };
 
 // iOS跳转到App Store
-const redirectToAppStore = async () => {
-  const appStoreUrl = updateInfo.value.downloadInfo?.appStore?.url;
-  if (appStoreUrl) {
-    window.open(appStoreUrl, "_system");
-  }
-  showUpdateDialog.value = false;
-};
+// const redirectToAppStore = async () => {
+//   const appStoreUrl = updateInfo.value.downloadInfo?.appStore?.url;
+//   if (appStoreUrl) {
+//     window.open(appStoreUrl, "_system");
+//   }
+//   showUpdateDialog.value = false;
+// };
 
 // 显示更新弹框
 const showUpdatePrompt = (updateData) => {
