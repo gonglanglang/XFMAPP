@@ -14,6 +14,63 @@
         </var-input>
       </div>
 
+      <!-- 筛选按钮 -->
+      <div class="mb-4 flex justify-between items-center">
+        <div class="flex items-center space-x-2">
+          <var-button 
+            type="primary" 
+            size="small" 
+            @click="showFilterPanel = true"
+            class="rounded-full"
+          >
+            <var-icon name="filter-variant" class="mr-1" />
+            筛选
+          </var-button>
+          
+          <!-- 已选筛选条件显示 -->
+          <div v-if="hasActiveFilters" class="flex items-center space-x-1">
+            <var-chip 
+              v-if="filters.phone" 
+              size="small" 
+              closable 
+              @close="clearFilter('phone')"
+              color="primary"
+            >
+              手机号: {{ filters.phone }}
+            </var-chip>
+            <var-chip 
+              v-if="filters.sceneGroup" 
+              size="small" 
+              closable 
+              @close="clearFilter('sceneGroup')"
+              color="primary"
+            >
+              现场组别: {{ filters.sceneGroup }}
+            </var-chip>
+            <var-chip 
+              v-if="filters.className" 
+              size="small" 
+              closable 
+              @close="clearFilter('className')"
+              color="primary"
+            >
+              现场班班: {{ filters.className }}
+            </var-chip>
+          </div>
+        </div>
+        
+        <!-- 清除所有筛选 -->
+        <var-button 
+          v-if="hasActiveFilters"
+          type="warning" 
+          size="small" 
+          text
+          @click="clearAllFilters"
+        >
+          清除筛选
+        </var-button>
+      </div>
+
       <!-- 活动信息卡片 -->
       <var-paper ripple :elevation="2" class="mb-4 p-4">
         <!-- <var-cell>纸张</var-cell>
@@ -21,7 +78,8 @@
         <var-cell>纸张</var-cell> -->
         <div class="flex items-start space-x-3">
           <div class="w-12 h-12 rounded-xl flex items-center justify-center">
-            <svg class="w-8 h-8 transition-all duration-300 group-hover:scale-110 group-hover:text-blue-600" aria-hidden="true">
+            <svg class="w-8 h-8 transition-all duration-300 group-hover:scale-110 group-hover:text-blue-600"
+              aria-hidden="true">
               <use xlink:href="#icon-huodongguanli"></use>
             </svg>
           </div>
@@ -43,7 +101,8 @@
 
       <!-- 学员列表 -->
       <div class="space-y-3" ref="listContainer">
-        <var-paper v-for="(student, index) in studentData.records" :key="student.id || index" ripple :elevation="2" class="p-4 cursor-pointer" @click="editStudent(student)">
+        <var-paper v-for="(student, index) in studentData.records" :key="student.id || index" ripple :elevation="2"
+          class="p-4 cursor-pointer" @click="editStudent(student)">
           <!-- 学员信息行 -->
           <div class="flex items-center space-x-3 mb-3">
             <!-- 头像 -->
@@ -76,14 +135,21 @@
 
           <!-- 活动信息 -->
           <var-cell>
-            <h4 class="font-medium text-sm mb-1">参与活动</h4>
+            <h4 class="font-medium text-sm">参与活动</h4>
             <p class="text-sm leading-relaxed">
               {{ student.activityName || "暂无活动信息" }}
             </p>
           </var-cell>
 
           <var-cell>
-            <h4 class="font-medium text-sm mb-1">现场组别</h4>
+            <h4 class="font-medium text-sm">班班名称</h4>
+            <p class="text-sm leading-relaxed">
+              {{ JSON.parse(student.jsonData || '[]')?.map(row => row.name).toString() || "暂无班班" }}
+            </p>
+          </var-cell>
+
+          <var-cell>
+            <h4 class="font-medium text-sm">现场组别</h4>
             <p class="text-sm leading-relaxed">
               {{ student.sceneGroup || "暂无现场组别" }}
             </p>
@@ -116,6 +182,98 @@
     <var-snackbar v-model:show="showMessage" :type="messageType" :duration="3000" position="top">
       {{ message }}
     </var-snackbar>
+
+    <!-- 筛选弹出层 -->
+    <var-popup 
+      v-model:show="showFilterPanel" 
+      position="top" 
+      :overlay-style="{ backgroundColor: 'rgba(0, 0, 0, 0.6)' }"
+      class="filter-popup"
+      :safe-area-top="true"
+    >
+      <div class="w-full bg-white flex flex-col filter-panel">
+        <!-- 头部 -->
+        <div class="flex items-center justify-between p-4 border-b border-gray-200">
+          <h3 class="text-lg font-semibold">筛选条件</h3>
+          <var-button 
+            type="primary" 
+            text 
+            @click="showFilterPanel = false"
+            class="p-1"
+          >
+            <var-icon name="close" size="20" />
+          </var-button>
+        </div>
+
+        <!-- 筛选内容 -->
+        <div class="flex-1 p-4 overflow-y-auto">
+          <!-- 手机号筛选 -->
+          <div class="mb-6">
+            <h4 class="text-sm font-medium mb-3 text-gray-700">手机号</h4>
+            <var-input 
+              v-model="tempFilters.phone" 
+              placeholder="请输入手机号" 
+              clearable
+              class="rounded-lg"
+            >
+              <template #prepend-icon>
+                <var-icon name="phone" color="#9ca3af" />
+              </template>
+            </var-input>
+          </div>
+
+          <!-- 现场组别筛选 -->
+           <div class="mb-6">
+             <h4 class="text-sm font-medium mb-3 text-gray-700">现场组别</h4>
+             <var-input 
+               v-model="tempFilters.sceneGroup" 
+               placeholder="请输入现场组别" 
+               clearable
+               class="rounded-lg"
+             >
+               <template #prepend-icon>
+                 <var-icon name="account-group" color="#9ca3af" />
+               </template>
+             </var-input>
+           </div>
+
+          <!-- 现场班班筛选 -->
+           <div class="mb-6">
+             <h4 class="text-sm font-medium mb-3 text-gray-700">现场班班</h4>
+             <var-input 
+               v-model="tempFilters.className" 
+               placeholder="请输入现场班班" 
+               clearable
+               class="rounded-lg"
+             >
+               <template #prepend-icon>
+                 <var-icon name="school" color="#9ca3af" />
+               </template>
+             </var-input>
+           </div>
+        </div>
+
+        <!-- 底部操作按钮 -->
+        <div class="p-4 border-t border-gray-200 space-y-3">
+          <var-button 
+            type="primary" 
+            block 
+            @click="applyFilters"
+            class="rounded-lg"
+          >
+            应用筛选
+          </var-button>
+          <var-button 
+            type="default" 
+            block 
+            @click="resetFilters"
+            class="rounded-lg"
+          >
+            重置筛选
+          </var-button>
+        </div>
+      </div>
+    </var-popup>
   </div>
 </template>
 
@@ -142,6 +300,24 @@ const message = ref("");
 const messageType = ref("success");
 const listContainer = ref(null);
 const hasMore = ref(true);
+
+// 筛选相关数据
+const showFilterPanel = ref(false);
+const filters = ref({
+  phone: "",
+  sceneGroup: "",
+  className: "",
+});
+const tempFilters = ref({
+  phone: "",
+  sceneGroup: "",
+  className: "",
+});
+
+// 计算属性：是否有激活的筛选条件
+const hasActiveFilters = computed(() => {
+  return filters.value.phone || filters.value.sceneGroup || filters.value.className;
+});
 
 // 活动信息 - 从路由参数获取
 const activityInfo = ref({
@@ -252,7 +428,8 @@ const loadMore = async () => {
   if (loadingMore.value || !hasMore.value) return;
 
   studentData.value.current += 1;
-  await fetchStudentList({}, true);
+  const searchParams = buildSearchParams();
+  await fetchStudentList(searchParams, true);
 };
 
 // 滚动事件处理
@@ -273,16 +450,116 @@ const handleSearch = () => {
   studentData.value.records = [];
   hasMore.value = true;
 
+  const searchParams = buildSearchParams();
+  fetchStudentList(searchParams);
+};
+
+// 构建搜索参数
+const buildSearchParams = () => {
+  const params = {};
+  
+  // 添加搜索关键词
   if (searchKeyword.value.trim()) {
-    fetchStudentList({ custName: searchKeyword.value.trim() });
-  } else {
-    fetchStudentList();
+    params.custName = searchKeyword.value.trim();
   }
+  
+  // 添加筛选条件
+  if (filters.value.phone) {
+    params.custPhone = filters.value.phone;
+  }
+  
+  if (filters.value.sceneGroup) {
+    params.sceneGroup = filters.value.sceneGroup;
+  }
+  
+  if (filters.value.className) {
+    params.className = filters.value.className;
+  }
+  
+  return params;
+};
+
+// 应用筛选
+const applyFilters = () => {
+  // 将临时筛选条件应用到正式筛选条件
+  filters.value = { ...tempFilters.value };
+  
+  // 重置分页并搜索
+  studentData.value.current = 1;
+  studentData.value.records = [];
+  hasMore.value = true;
+  
+  const searchParams = buildSearchParams();
+  fetchStudentList(searchParams);
+  
+  // 关闭筛选面板
+  showFilterPanel.value = false;
+  
+  showNotification("筛选条件已应用", "success");
+};
+
+// 重置筛选
+const resetFilters = () => {
+  tempFilters.value = {
+    phone: "",
+    sceneGroup: "",
+    className: "",
+  };
+};
+
+// 清除单个筛选条件
+const clearFilter = (filterKey) => {
+  filters.value[filterKey] = "";
+  
+  // 重新搜索
+  studentData.value.current = 1;
+  studentData.value.records = [];
+  hasMore.value = true;
+  
+  const searchParams = buildSearchParams();
+  fetchStudentList(searchParams);
+  
+  showNotification("筛选条件已清除", "info");
+};
+
+// 清除所有筛选条件
+const clearAllFilters = () => {
+  filters.value = {
+    phone: "",
+    sceneGroup: "",
+    className: "",
+  };
+  
+  tempFilters.value = {
+    phone: "",
+    sceneGroup: "",
+    className: "",
+  };
+  
+  // 重新搜索
+  studentData.value.current = 1;
+  studentData.value.records = [];
+  hasMore.value = true;
+  
+  const searchParams = buildSearchParams();
+  fetchStudentList(searchParams);
+  
+  showNotification("所有筛选条件已清除", "info");
 };
 
 // 刷新数据
 const refreshData = () => {
   searchKeyword.value = "";
+  filters.value = {
+    phone: "",
+    sceneGroup: "",
+    className: "",
+  };
+  tempFilters.value = {
+    phone: "",
+    sceneGroup: "",
+    className: "",
+  };
   studentData.value.current = 1;
   studentData.value.records = [];
   hasMore.value = true;
@@ -348,3 +625,76 @@ onUnmounted(() => {
   window.removeEventListener("scroll", handleScroll);
 });
 </script>
+
+<style scoped>
+/* 筛选面板样式 */
+.filter-popup {
+  z-index: 9999;
+}
+
+.filter-popup .var-popup__content {
+  width: 100%;
+  max-width: 100%;
+}
+
+.filter-panel {
+  height: 80vh;
+  max-height: 80vh;
+  border-radius: 0 0 16px 16px;
+}
+
+/* 筛选按钮样式 */
+.var-button.rounded-full {
+  border-radius: 20px;
+}
+
+/* 筛选条件芯片样式 */
+.var-chip {
+  margin: 2px;
+  font-size: 12px;
+}
+
+/* 输入框样式 */
+.rounded-lg .var-input__input {
+  border-radius: 8px;
+}
+
+/* 滚动条样式 */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 2px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 2px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* 筛选内容区域 */
+.filter-panel .flex-1 {
+  padding: 16px;
+  overflow-y: auto;
+}
+
+/* 底部按钮区域 */
+.filter-panel .border-t {
+  padding: 16px;
+  background: #fafafa;
+}
+
+/* 响应式设计 */
+@media (max-width: 640px) {
+  .filter-panel {
+    height: 85vh;
+    max-height: 85vh;
+  }
+}
+</style>

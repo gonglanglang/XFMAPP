@@ -43,6 +43,8 @@ onMounted(() => {
     } else if (theme === "auto") {
       const prefersDark = window.matchMedia("(prefers-color-scheme: md3Dark)").matches;
       StyleProvider(prefersDark ? Themes.md3Dark : Themes.md3Light);
+    } else {
+      StyleProvider(Themes.md3Light);
     }
   }
 });

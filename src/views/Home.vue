@@ -89,6 +89,9 @@
 import { ref, onMounted } from "vue";
 import { Camera } from "@capacitor/camera";
 import { Device } from "@capacitor/device";
+import { Filesystem, Directory } from "@capacitor/filesystem";
+import { FileOpener } from "@capacitor-community/file-opener";
+import { CapacitorHttp } from "@capacitor/core";
 // 导入XFMAPPHeader组件
 import XFMAPPHeader from "@/components/XFMAPPHeader/index.vue";
 import XFMSafeAreaHeader from "@/components/XFMSafeAreaHeader/index.vue";
@@ -172,6 +175,19 @@ const startUpdate = async () => {
   }
 };
 
+// 辅助函数：将blob转换为base64
+const blobToBase64 = (blob) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const base64 = reader.result.split(',')[1]; // 移除data:xxx;base64,前缀
+      resolve(base64);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+};
+
 // Android下载并安装
 const downloadAndInstallAndroid = async () => {
   isDownloading.value = true;
@@ -179,55 +195,73 @@ const downloadAndInstallAndroid = async () => {
   downloadStatus.value = "准备下载...";
 
   try {
-    // 模拟下载进度
-    const downloadInterval = setInterval(() => {
-      if (downloadProgress.value < 100) {
-        downloadProgress.value += Math.random() * 10;
-        if (downloadProgress.value > 100) downloadProgress.value = 100;
+    const apkUrl = "https://gitee.com/sh-lyj/xfm-crm-pro-vue3/releases/download/1.0.1/app-release1.0.1.apk";
+    const fileName = "app-release1.0.1.apk";
+    
+    downloadStatus.value = "正在连接服务器...";
+    downloadProgress.value = 10;
+    
+    // 使用CapacitorHttp下载文件
+    downloadStatus.value = "正在下载更新包...";
+    downloadProgress.value = 30;
+    
+    const response = await CapacitorHttp.request({
+      method: 'GET',
+      url: apkUrl,
+      responseType: 'blob'
+    });
 
-        if (downloadProgress.value < 30) {
-          downloadStatus.value = "正在连接服务器...";
-        } else if (downloadProgress.value < 80) {
-          downloadStatus.value = "正在下载更新包...";
-        } else if (downloadProgress.value < 100) {
-          downloadStatus.value = "即将完成...";
-        } else {
-          downloadStatus.value = "下载完成";
-          clearInterval(downloadInterval);
+    downloadProgress.value = 80;
+    downloadStatus.value = "下载完成，准备安装...";
 
-          // 开始安装
-          setTimeout(() => {
-            isDownloading.value = false;
-            isInstalling.value = true;
+    // 将下载的文件保存到设备
+    const base64Data = await blobToBase64(response.data);
+    
+    downloadProgress.value = 90;
+    
+    const savedFile = await Filesystem.writeFile({
+      path: fileName,
+      data: base64Data,
+      directory: Directory.Cache,
+    });
 
-            // 模拟安装过程
-            setTimeout(() => {
-              // 这里应该调用Capacitor的安装API
-              // 实际项目中需要使用文件下载和安装插件
-              console.log("开始安装APK");
+    downloadProgress.value = 100;
+    downloadStatus.value = "下载完成";
 
-              // 安装完成后的处理
-              setTimeout(() => {
-                isInstalling.value = false;
-                showUpdateDialog.value = false;
-                message.value = "更新安装完成，应用将重启";
-                messageType.value = "success";
-                showMessage.value = true;
+    isDownloading.value = false;
+    isInstalling.value = true;
 
-                // 重启应用
-                setTimeout(() => {
-                  window.location.reload();
-                }, 2000);
-              }, 3000);
-            }, 1000);
-          }, 500);
-        }
-      }
-    }, 200);
+    // 打开APK文件进行安装
+    downloadStatus.value = "安装完成";
+    await FileOpener.open({
+      filePath: savedFile.uri,
+      contentType: 'application/vnd.android.package-archive',
+    });
+
+    // 安装完成后的处理
+    setTimeout(() => {
+      isInstalling.value = false;
+      showUpdateDialog.value = false;
+      message.value = "APK已打开，请按照提示完成安装";
+      messageType.value = "success";
+      showMessage.value = true;
+    }, 2000);
+
   } catch (error) {
+    console.error("下载或安装失败:", error);
     isDownloading.value = false;
     isInstalling.value = false;
-    throw error;
+    
+    // 如果下载失败，尝试使用浏览器下载
+    message.value = "应用内下载失败，正在打开浏览器下载...";
+    messageType.value = "warning";
+    showMessage.value = true;
+    
+    // 打开浏览器下载
+    setTimeout(() => {
+      window.open("https://gitee.com/sh-lyj/xfm-crm-pro-vue3/releases/download/1.0.1/app-release1.0.1.apk", "_system");
+      showUpdateDialog.value = false;
+    }, 1500);
   }
 };
 
