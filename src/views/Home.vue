@@ -45,7 +45,8 @@
     </var-snackbar>
 
     <!-- 更新弹框 -->
-    <var-dialog v-model:show="showUpdateDialog" title="发现新版本" :close-on-click-overlay="false" :close-on-key-escape="false">
+    <var-dialog v-model:show="showUpdateDialog" title="发现新版本" :close-on-click-overlay="false"
+      :close-on-key-escape="false">
       <div class="p-4">
         <div class="mb-4">
           <h3 class="text-lg font-semibold mb-2">{{ updateInfo.title }}</h3>
@@ -75,7 +76,8 @@
 
       <template #actions>
         <div class="flex pb-4 justify-around">
-          <var-button v-if="!isDownloading && !isInstalling" text @click="cancelUpdate" :disabled="updateInfo.forceUpdate">
+          <var-button v-if="!isDownloading && !isInstalling" text @click="cancelUpdate"
+            :disabled="updateInfo.forceUpdate">
             {{ updateInfo.forceUpdate ? "强制更新" : "稍后更新" }}
           </var-button>
           <var-button v-if="!isDownloading && !isInstalling" type="primary" @click="startUpdate"> 立即更新 </var-button>
@@ -160,9 +162,9 @@ const startUpdate = async () => {
     const deviceInfo = await Device.getInfo();
 
     if (deviceInfo.platform === "android") {
-      await downloadAndInstallAndroid();
+      // await downloadAndInstallAndroid();
     } else if (deviceInfo.platform === "ios") {
-      await redirectToAppStore();
+      // await redirectToAppStore();
     } else {
       // Web平台刷新页面
       window.location.reload();
@@ -189,90 +191,165 @@ const blobToBase64 = (blob) => {
 };
 
 // Android下载并安装
-const downloadAndInstallAndroid = async () => {
-  isDownloading.value = true;
-  downloadProgress.value = 0;
-  downloadStatus.value = "准备下载...";
+// const downloadAndInstallAndroid = async () => {
+//   isDownloading.value = true;
+//   downloadProgress.value = 0;
+//   downloadStatus.value = "准备下载...";
 
-  try {
-    const apkUrl = "https://gitee.com/sh-lyj/xfm-crm-pro-vue3/releases/download/1.0.1/app-release1.0.1.apk";
-    const fileName = "app-release1.0.1.apk";
-    
-    downloadStatus.value = "正在连接服务器...";
-    downloadProgress.value = 10;
-    
-    // 使用CapacitorHttp下载文件
-    downloadStatus.value = "正在下载更新包...";
-    downloadProgress.value = 30;
-    
-    const response = await CapacitorHttp.request({
-      method: 'GET',
-      url: apkUrl,
-      responseType: 'blob'
-    });
+//   try {
+//     const downloadUrl = "http://166.108.234.16/app-release1.0.1.apk";
+//     if (!downloadUrl) {
+//       throw new Error("下载链接不存在");
+//     }
 
-    downloadProgress.value = 80;
-    downloadStatus.value = "下载完成，准备安装...";
+//     downloadStatus.value = "正在下载APK文件...";
 
-    // 将下载的文件保存到设备
-    const base64Data = await blobToBase64(response.data);
-    
-    downloadProgress.value = 90;
-    
-    const savedFile = await Filesystem.writeFile({
-      path: fileName,
-      data: base64Data,
-      directory: Directory.Cache,
-    });
+//     // 使用fetch下载文件
+//     const response = await fetch(downloadUrl);
+//     if (!response.ok) {
+//       throw new Error(`下载失败: ${response.status}`);
+//     }
 
-    downloadProgress.value = 100;
-    downloadStatus.value = "下载完成";
+//     const contentLength = response.headers.get("content-length");
+//     const total = parseInt(contentLength, 10);
+//     let loaded = 0;
 
-    isDownloading.value = false;
-    isInstalling.value = true;
+//     const reader = response.body.getReader();
+//     const chunks = [];
 
-    // 打开APK文件进行安装
-    downloadStatus.value = "安装完成";
+//     while (true) {
+//       const { done, value } = await reader.read();
+//       if (done) break;
+
+//       chunks.push(value);
+//       loaded += value.length;
+
+//       if (total) {
+//         downloadProgress.value = Math.round((loaded / total) * 100);
+//         downloadStatus.value = `正在下载... ${Math.round(loaded / 1024 / 1024)}MB / ${Math.round(total / 1024 / 1024)}MB`;
+//       }
+//     }
+
+//     // 合并所有chunks
+//     const blob = new Blob(chunks);
+//     const arrayBuffer = await blob.arrayBuffer();
+//     const base64Data = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
+
+//     downloadStatus.value = "保存文件中...";
+
+//     // 保存APK文件到设备
+//     const fileName = `update_${Date.now()}.apk`;
+//     const result = await Filesystem.writeFile({
+//       path: fileName,
+//       data: base64Data,
+//       directory: Directory.Cache,
+//     });
+
+//     downloadStatus.value = "下载完成，准备安装...";
+//     isDownloading.value = false;
+//     isInstalling.value = true;
+
+//     // 安装APK
+//     await installApk(result.uri);
+//   } catch (error) {
+//     console.error("下载或安装失败:", error);
+//     isDownloading.value = false;
+//     isInstalling.value = false;
+//     message.value = `更新失败: ${error.message}`;
+//     messageType.value = "error";
+//     showMessage.value = true;
+//   }
+// };
+
+// 安装APK文件
+const installApk = async (fileUri) => {
+  if (Capacitor.getPlatform() === "android") {
+    // 使用FileOpener打开APK文件进行安装
     await FileOpener.open({
-      filePath: savedFile.uri,
-      contentType: 'application/vnd.android.package-archive',
+      filePath: fileUri,
+      contentType: "application/vnd.android.package-archive",
+      openWithDefault: true,
     });
+    try {
+      const apkUrl = "https://gitee.com/sh-lyj/xfm-crm-pro-vue3/releases/download/1.0.1/app-release1.0.1.apk";
+      const fileName = "app-release1.0.1.apk";
 
-    // 安装完成后的处理
-    setTimeout(() => {
+      downloadStatus.value = "正在连接服务器...";
+      downloadProgress.value = 10;
+
+      // 使用CapacitorHttp下载文件
+      downloadStatus.value = "正在下载更新包...";
+      downloadProgress.value = 30;
+
+      const response = await CapacitorHttp.request({
+        method: 'GET',
+        url: apkUrl,
+        responseType: 'blob'
+      });
+
+      downloadProgress.value = 80;
+      downloadStatus.value = "下载完成，准备安装...";
+
+      // 将下载的文件保存到设备
+      const base64Data = await blobToBase64(response.data);
+
+      downloadProgress.value = 90;
+
+      const savedFile = await Filesystem.writeFile({
+        path: fileName,
+        data: base64Data,
+        directory: Directory.Cache,
+      });
+
+      downloadProgress.value = 100;
+      downloadStatus.value = "下载完成";
+
+      isDownloading.value = false;
+      isInstalling.value = true;
+
+      // 打开APK文件进行安装
+      downloadStatus.value = "安装完成";
+      await FileOpener.open({
+        filePath: savedFile.uri,
+        contentType: 'application/vnd.android.package-archive',
+      });
+
+      // 安装完成后的处理
+      setTimeout(() => {
+        isInstalling.value = false;
+        showUpdateDialog.value = false;
+        message.value = "APK已打开，请按照提示完成安装";
+        messageType.value = "success";
+        showMessage.value = true;
+      }, 2000);
+
+    } catch (error) {
+      console.error("下载或安装失败:", error);
+      isDownloading.value = false;
       isInstalling.value = false;
-      showUpdateDialog.value = false;
-      message.value = "APK已打开，请按照提示完成安装";
-      messageType.value = "success";
-      showMessage.value = true;
-    }, 2000);
 
-  } catch (error) {
-    console.error("下载或安装失败:", error);
-    isDownloading.value = false;
-    isInstalling.value = false;
-    
-    // 如果下载失败，尝试使用浏览器下载
-    message.value = "应用内下载失败，正在打开浏览器下载...";
-    messageType.value = "warning";
-    showMessage.value = true;
-    
-    // 打开浏览器下载
-    setTimeout(() => {
-      window.open("https://gitee.com/sh-lyj/xfm-crm-pro-vue3/releases/download/1.0.1/app-release1.0.1.apk", "_system");
-      showUpdateDialog.value = false;
-    }, 1500);
-  }
-};
+      // 如果下载失败，尝试使用浏览器下载
+      message.value = "应用内下载失败，正在打开浏览器下载...";
+      messageType.value = "warning";
+      showMessage.value = true;
+
+      // 打开浏览器下载
+      setTimeout(() => {
+        window.open("https://gitee.com/sh-lyj/xfm-crm-pro-vue3/releases/download/1.0.1/app-release1.0.1.apk", "_system");
+        showUpdateDialog.value = false;
+      }, 1500);
+    }
+  };
+}
 
 // iOS跳转到App Store
-const redirectToAppStore = async () => {
-  const appStoreUrl = updateInfo.value.downloadInfo?.appStore?.url;
-  if (appStoreUrl) {
-    window.open(appStoreUrl, "_system");
-  }
-  showUpdateDialog.value = false;
-};
+// const redirectToAppStore = async () => {
+//   const appStoreUrl = updateInfo.value.downloadInfo?.appStore?.url;
+//   if (appStoreUrl) {
+//     window.open(appStoreUrl, "_system");
+//   }
+//   showUpdateDialog.value = false;
+// };
 
 // 显示更新弹框
 const showUpdatePrompt = (updateData) => {
@@ -292,5 +369,6 @@ onMounted(async () => {
   } catch (error) {
     console.error("检查更新失败:", error);
   }
-});
+})
+
 </script>
